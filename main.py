@@ -1,39 +1,60 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from tutoria import Base, Tutorial, Tag, TutorialTag 
+from tutoria import Base, Tutorial, Tag, TutorialTag  # Reemplaza "your_module_name" con el nombre de tu archivo .py que contiene las definiciones de las clases
 
 # Crear el motor de la base de datos
-engine = create_engine('mysql://usuario:contraseña@localhost/tutoria_db')
+engine = create_engine('sqlite:///tutorial_app.db')
 
 # Crear todas las tablas en la base de datos
 Base.metadata.create_all(engine)
 
-# Crear una sesión
+# Crear una sesión para interactuar con la base de datos
 Session = sessionmaker(bind=engine)
 session = Session()
 
-# Ejemplo de cómo agregar datos a la base de datos
-tutorial1 = Tutorial(title='Tutorial 1', description='Descripción del tutorial 1', published=True, long_description='Descripción larga del tutorial 1')
-tutorial2 = Tutorial(title='Tutorial 2', description='Descripción del tutorial 2', published=False, long_description='Descripción larga del tutorial 2')
+# Ejemplo de cómo agregar un tutorial y sus etiquetas a la base de datos
+def add_tutorial_with_tags(title, description, published, long_description, tags):
+    tutorial = Tutorial(title=title, description=description, published=published, long_description=long_description)
+    for tag_name in tags:
+        tag = session.query(Tag).filter_by(name=tag_name).first()
+        if not tag:
+            tag = Tag(name=tag_name)
+        tutorial.tags.append(tag)
+    session.add(tutorial)
+    session.commit()
 
-tag1 = Tag(name='Python')
-tag2 = Tag(name='SQL')
+# Ejemplo de cómo obtener todos los tutoriales
+def get_all_tutorials():
+    return session.query(Tutorial).all()
 
-tutorial_tag1 = TutorialTag(tutorial=tutorial1, tag=tag1)
-tutorial_tag2 = TutorialTag(tutorial=tutorial2, tag=tag1)
-tutorial_tag3 = TutorialTag(tutorial=tutorial2, tag=tag2)
+# Ejemplo de cómo obtener todos los tutoriales publicados
+def get_published_tutorials():
+    return session.query(Tutorial).filter_by(published=True).all()
 
-session.add_all([tutorial1, tutorial2, tag1, tag2, tutorial_tag1, tutorial_tag2, tutorial_tag3])
-session.commit()
+# Ejemplo de cómo obtener todos los tutoriales relacionados con una etiqueta específica
+def get_tutorials_by_tag(tag_name):
+    return session.query(Tutorial).join(Tutorial.tags).filter(Tag.name == tag_name).all()
 
-# Ejemplo de cómo consultar datos en la base de datos
-print("Tutoriales:")
-for tutorial in session.query(Tutorial).all():
-    print(f"ID: {tutorial.id}, Título: {tutorial.title}, Publicado: {tutorial.published}")
+# Ejemplo de uso
+if __name__ == "__main__":
+    # Agregar un tutorial con etiquetas
+    add_tutorial_with_tags("Tutorial de SQLAlchemy", "Descripción del tutorial de SQLAlchemy", True, "Descripción larga del tutorial de SQLAlchemy", ["SQLAlchemy", "Base de datos"])
 
-print("\nTags:")
-for tag in session.query(Tag).all():
-    print(f"ID: {tag.id}, Nombre: {tag.name}")
+    # Obtener todos los tutoriales
+    all_tutorials = get_all_tutorials()
+    print("Todos los tutoriales:")
+    for tutorial in all_tutorials:
+        print(tutorial.title)
 
-# Cerrar la sesión
-session.close()
+    # Obtener todos los tutoriales publicados
+    published_tutorials = get_published_tutorials()
+    print("\nTutoriales publicados:")
+    for tutorial in published_tutorials:
+        print(tutorial.title)
+
+    # Obtener todos los tutoriales relacionados con una etiqueta específica
+    tag_tutorials = get_tutorials_by_tag("SQLAlchemy")
+    print("\nTutoriales relacionados con SQLAlchemy:")
+    for tutorial in tag_tutorials:
+        print(tutorial.title)
+
