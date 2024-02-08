@@ -14,13 +14,27 @@ session = Session()
 
 # Ejemplo de cómo agregar un tutorial y sus etiquetas a la base de datos
 def add_tutorial_with_tags(title, description, published, long_description, tags):
-    tutorial = Tutorial(title=title, description=description, published=published, long_description=long_description)
+    # Crear el tutorial
+    tutorial = Tutorial(title=title,
+                        description=description,
+                        published=published,
+                        long_description=long_description)
+    session.add(tutorial)
+    session.commit()
+
+    # Asociar las etiquetas al tutorial
     for tag_name in tags:
-        tag = session.query(Tag).filter_by(name=tag_name).first()
+        # Verificar si la etiqueta ya existe en la base de datos
+        tag = session.query(Tag).filter(Tag.name == tag_name).first()
         if not tag:
             tag = Tag(name=tag_name)
-        tutorial.tags.append(tag)
-    session.add(tutorial)
+            session.add(tag)
+            session.commit()
+        
+        # Asociar la etiqueta al tutorial
+        tutorial_tag = TutorialTag(tutorial=tutorial, tag=tag)
+        session.add(tutorial_tag)
+    
     session.commit()
 
 # Ejemplo de cómo obtener todos los tutoriales
@@ -37,8 +51,20 @@ def get_tutorials_by_tag(tag_name):
 
 # Ejemplo de uso
 if __name__ == "__main__":
-    # Agregar un tutorial con etiquetas
-    add_tutorial_with_tags("Tutorial de SQLAlchemy", "Descripción del tutorial de SQLAlchemy", True, "Descripción larga del tutorial de SQLAlchemy", ["SQLAlchemy", "Base de datos"])
+    
+    #agregar tutoriales de crochet y yoga
+    add_tutorial_with_tags("Tutorial de crochet", 
+                        "Manualidad", 
+                        True, 
+                        "MAnualidad que se hace realiza con ayuda de agujas y lana", 
+                        ["Crochet", "Base de datos"])
+
+    print("Tutorial agregado con éxito.")
+
+    add_tutorial_with_tags("Tutorial de yoga", 
+                           "Esjercicio", 
+                           True, 
+                           "Ejercicios de estiramiento y respiracion", ["Yoga", "Base de datos"])
 
     # Obtener todos los tutoriales
     all_tutorials = get_all_tutorials()
@@ -52,9 +78,4 @@ if __name__ == "__main__":
     for tutorial in published_tutorials:
         print(tutorial.title)
 
-    # Obtener todos los tutoriales relacionados con una etiqueta específica
-    tag_tutorials = get_tutorials_by_tag("SQLAlchemy")
-    print("\nTutoriales relacionados con SQLAlchemy:")
-    for tutorial in tag_tutorials:
-        print(tutorial.title)
 
